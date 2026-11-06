@@ -55,6 +55,8 @@ import {
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,
+  LayoutTemplateIcon,
+  SaveIcon,
   BugIcon,
   ChartNoAxesColumnIcon,
   CheckIcon,
@@ -141,6 +143,9 @@ import {
 } from "../state/entities";
 import { visibleLinkedThreads } from "@t3tools/client-runtime/state/threads";
 import { resolveThreadActionProjectRef, startNewThreadFromContext } from "../lib/chatThreadActions";
+import { applyPaneLayout, saveThreadPaneLayout } from "../paneLayoutActions";
+import { describePaneLayout, usePaneLayoutStore } from "../paneLayoutStore";
+import { requestPaneLayoutName } from "./SavePaneLayoutDialog";
 import {
   appendBrowsePathSegment,
   ensureBrowseDirectoryPath,
@@ -467,6 +472,7 @@ function OpenCommandPaletteDialog(props: {
   const availableSettingsSearchItems = useAvailableSettingsSearchItems();
   const { activeDraftThread, activeThread, defaultProjectRef, handleNewThread } =
     useHandleNewThread();
+  const paneLayouts = usePaneLayoutStore((state) => state.layouts);
   const paletteRouteTarget = useThreadRouteTarget();
   const projects = useProjects();
   const referenceThreadRef =
@@ -1302,6 +1308,85 @@ function OpenCommandPaletteDialog(props: {
       icon: <MessageSquareDashedIcon className={ITEM_ICON_CLASS} />,
       shortcutCommand: "chat.newWithoutProject",
       run: () => startScratchThread(scratchTargetEnvironmentId),
+    });
+  }
+
+  const paneLayoutThreadRef = activeThread
+    ? scopeThreadRef(activeThread.environmentId, activeThread.id)
+    : activeDraftThread
+      ? scopeThreadRef(activeDraftThread.environmentId, activeDraftThread.threadId)
+      : null;
+  if (contextualProjectRef !== null && paneLayouts.length > 0) {
+    const projectRef = contextualProjectRef;
+    actionItems.push({
+      kind: "submenu",
+      value: "action:new-thread-with-layout",
+      searchTerms: ["new thread", "layout", "panes", "panels", "workspace"],
+      title: "New thread with layout...",
+      icon: <LayoutTemplateIcon className={ITEM_ICON_CLASS} />,
+      addonIcon: <LayoutTemplateIcon className={ADDON_ICON_CLASS} />,
+      groups: [
+        {
+          value: "new-thread-with-layout",
+          label: "Pane layouts",
+          items: paneLayouts.map((layout) => ({
+            kind: "action" as const,
+            value: `action:new-thread-with-layout:${layout.id}`,
+            searchTerms: [layout.name],
+            title: layout.name,
+            description: describePaneLayout(layout),
+            icon: <LayoutTemplateIcon className={ITEM_ICON_CLASS} />,
+            run: async () => {
+              const created = await handleNewThread(projectRef);
+              if (created) {
+                applyPaneLayout(
+                  scopeThreadRef(projectRef.environmentId, created.threadId),
+                  layout.id,
+                );
+              }
+            },
+          })),
+        },
+      ],
+    });
+  }
+  if (paneLayoutThreadRef !== null) {
+    const threadRef = paneLayoutThreadRef;
+    if (paneLayouts.length > 0) {
+      actionItems.push({
+        kind: "submenu",
+        value: "action:apply-pane-layout",
+        searchTerms: ["layout", "load", "apply", "panes", "panels", "workspace"],
+        title: "Load pane layout...",
+        icon: <LayoutTemplateIcon className={ITEM_ICON_CLASS} />,
+        addonIcon: <LayoutTemplateIcon className={ADDON_ICON_CLASS} />,
+        groups: [
+          {
+            value: "apply-pane-layout",
+            label: "Pane layouts",
+            items: paneLayouts.map((layout) => ({
+              kind: "action" as const,
+              value: `action:apply-pane-layout:${layout.id}`,
+              searchTerms: [layout.name],
+              title: layout.name,
+              description: describePaneLayout(layout),
+              icon: <LayoutTemplateIcon className={ITEM_ICON_CLASS} />,
+              run: async () => applyPaneLayout(threadRef, layout.id),
+            })),
+          },
+        ],
+      });
+    }
+    actionItems.push({
+      kind: "action",
+      value: "action:save-pane-layout",
+      searchTerms: ["layout", "save", "panes", "panels", "workspace"],
+      title: "Save current pane layout...",
+      icon: <SaveIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        const name = await requestPaneLayoutName();
+        if (name) saveThreadPaneLayout(threadRef, name);
+      },
     });
   }
 

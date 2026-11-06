@@ -1,7 +1,16 @@
 import * as Schema from "effect/Schema";
-import { type PointerEvent as ReactPointerEvent, useLayoutEffect, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 
-import { getLocalStorageItem, setLocalStorageItem } from "./useLocalStorage";
+import {
+  getLocalStorageItem,
+  setLocalStorageItem,
+  subscribeLocalStorageKey,
+} from "./useLocalStorage";
 import { useResizeDrag } from "./useResizeDrag";
 import { useStableCallback } from "./useStableCallback";
 
@@ -54,6 +63,19 @@ export function useResizableWidth(options: UseResizableWidthOptions): {
   if (widthState.storageKey !== storageKey) {
     setWidthState({ storageKey, width: readWidth() });
   }
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- follows widths written outside this hook, such as an applied pane layout or another tab
+  useEffect(
+    () =>
+      subscribeLocalStorageKey(storageKey, () => {
+        try {
+          setWidthState({ storageKey, width: getLocalStorageItem(storageKey, WidthSchema) });
+        } catch (error) {
+          console.error("Could not read persisted panel width.", error);
+        }
+      }),
+    [storageKey],
+  );
 
   const clampedWidth = clamp(widthState.width ?? defaultWidth);
   const restoreWidth = useStableCallback((host: HTMLElement | null) => {
