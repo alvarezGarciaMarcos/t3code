@@ -323,15 +323,20 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
     );
   };
   const runShellCommandStable = useStableCallback(runShellCommand);
-  const addTerminalSurface = () => {
-    if (!activeThreadRef) return;
+  const launchPanelTerminal = () => {
+    if (!activeThreadRef) return null;
     const launched = terminalActions.launchTerminal({
       place: (terminalId) =>
         useRightPanelStore.getState().openTerminal(activeThreadRef, terminalId),
     });
-    if (!launched) return;
-    focusTerminal(activeThreadRef, launched.terminalId);
+    if (!launched) return null;
     void launched.result;
+    return launched.terminalId;
+  };
+  const launchPanelTerminalStable = useStableCallback(launchPanelTerminal);
+  const addTerminalSurface = () => {
+    const terminalId = launchPanelTerminal();
+    if (activeThreadRef && terminalId !== null) focusTerminal(activeThreadRef, terminalId);
   };
   const addTerminalSurfaceStable = useStableCallback(addTerminalSurface);
   const splitPanelTerminal = (direction: "horizontal" | "vertical" = "horizontal") => {
@@ -448,6 +453,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
     closePanelTerminalStable,
     createNewTerminalStable,
     lastInvokedScriptByProjectId,
+    launchPanelTerminalStable,
     requestClosePanelTerminalStable,
     requestCloseTerminalStable,
     runProjectScriptStable,

@@ -318,6 +318,27 @@ side chats.
 On mobile, a thread lists its side chats above the composer. Tap one to open it and
 answer its questions.
 
+## Pane layouts
+
+A pane layout saves the tabs in the right panel so you can open the same setup in
+any thread, such as a device next to a terminal with the panel at a quarter of
+the window.
+
+Arrange the right panel, then choose **Save current layout…** from the layout
+menu in the top-right corner of a thread, or run **Save current pane layout** from
+the command palette. A layout keeps its tabs in order, the active tab, browser
+addresses, the device you picked, and the panel width as a share of the window.
+
+To use one, pick it under **Load layout** in the same menu, run **Load pane
+layout** from the command palette, or start a thread with **New thread with
+layout**. Loading adds the layout's tabs to the panel and reuses tabs that are
+already open, so nothing is closed. Terminals start fresh in the thread's folder.
+A saved device that is no longer available opens the device picker instead.
+
+Saving with an existing name replaces that layout. **Delete layout** in the
+menu removes one; the confirmation offers **Undo**. Layouts are saved in this
+browser or desktop app and are not shared with your other devices.
+
 ## Snooze until later
 
 To change the choices in the snooze menu, open **Settings → Threads → Snooze options**.

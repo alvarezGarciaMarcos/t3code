@@ -25,6 +25,8 @@ import {
 import { useTimelineRewind } from "./chat/useTimelineRewind";
 import { useThreadLifecycle } from "./chat/useThreadLifecycle";
 import { useRightPanelActions } from "./chat/useRightPanelActions";
+import { usePaneLayoutApplier } from "./chat/usePaneLayoutApplier";
+import { PaneLayoutMenu } from "./chat/PaneLayoutMenu";
 import { type TerminalLaunchContext, useChatTerminalActions } from "./chat/useChatTerminalActions";
 import { useComposerSend } from "./chat/useComposerSend";
 import { useComposerResume } from "./chat/useComposerResume";
@@ -152,7 +154,10 @@ import { copyThreadReference } from "../lib/copyThreadReference";
 import { subscribeSnapShotComposerFocus } from "../lib/desktopSnapShot";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { FileMetadataThreadProvider } from "../hooks/FileMetadataThreadProvider";
-import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../rightPanelLayout";
+import {
+  RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY,
+  rightPanelWidthStorageKey,
+} from "../rightPanelLayout";
 import { PopoverCreateHandle } from "./ui/popover";
 import {
   selectActiveRightPanel,
@@ -1893,6 +1898,7 @@ export default function ChatView(props: ChatViewProps) {
     addTerminalSurfaceStable,
     closePanelTerminalStable,
     lastInvokedScriptByProjectId,
+    launchPanelTerminalStable,
     runProjectScriptStable,
     runShellCommandStable,
     splitPanelTerminalStable,
@@ -2395,6 +2401,17 @@ export default function ChatView(props: ChatViewProps) {
     closeRightPanelSurface,
   });
   const pullRequestSurfaceAvailable = supportsPullRequests && pullRequestPanelTarget !== null;
+  usePaneLayoutApplier({
+    activeThreadRef,
+    embedded,
+    browserAvailable: browserAvailable && canOperatePreview,
+    workspaceAvailable: activeProject !== null,
+    diffAvailable: isServerThread && isGitRepo,
+    pullRequestsAvailable: pullRequestsSurfaceAvailable,
+    deviceState,
+    deviceStateLoaded,
+    launchPanelTerminal: launchPanelTerminalStable,
+  });
   const {
     acknowledgeActiveThreadWoke,
     activeBranchMismatchKey,
@@ -3294,6 +3311,11 @@ export default function ChatView(props: ChatViewProps) {
     />
   );
   const threadPanelHeaderControl = <ThreadPanelHeaderControl {...panelToggleControlProps} />;
+  const paneLayoutMenu = (
+    <span className="pointer-events-auto flex shrink-0 [-webkit-app-region:no-drag]">
+      <PaneLayoutMenu threadRef={embedded ? null : activeThreadRef} />
+    </span>
+  );
   const panelLayoutControls = (
     <WorkspaceTitlebarControls
       showMaximizeControl={!shouldUsePlanSidebarSheet}
@@ -3302,6 +3324,7 @@ export default function ChatView(props: ChatViewProps) {
       maximized={rightPanelMaximized}
       onToggleMaximized={toggleRightPanelMaximizedStable}
     >
+      {paneLayoutMenu}
       {panelToggleControls}
     </WorkspaceTitlebarControls>
   );
@@ -3988,7 +4011,7 @@ export default function ChatView(props: ChatViewProps) {
         <ChatRightPanel
           sheet={shouldUsePlanSidebarSheet}
           workspaceLayoutElement={workspaceLayoutElement}
-          widthStorageKey={`t3code:preview-panel-width:${activeThreadKey}`}
+          widthStorageKey={rightPanelWidthStorageKey(scopedThreadKey(activeThreadRef))}
           sheetAnimationDurationMs={panelAnimationsActive ? panelAnimationDurationMs : 0}
           onCloseSheet={closePreviewPanelStable}
           open={rightPanelOpen}
@@ -4002,6 +4025,7 @@ export default function ChatView(props: ChatViewProps) {
                   maximized={rightPanelMaximized}
                   onToggle={toggleRightPanelMaximizedStable}
                 />
+                {paneLayoutMenu}
                 {panelToggleControls}
               </div>
             ) : null
